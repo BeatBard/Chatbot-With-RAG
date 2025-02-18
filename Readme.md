@@ -1,16 +1,18 @@
-# 📌 Chatbot with TogetherAI
-
-🚀 **A PDF-based chatbot using TogetherAI's LLMs and FAISS for retrieval, with a Panel UI interface.**  
-This chatbot allows users to upload PDFs and ask questions based on their content.
+# 📌 Chatbot with TogetherAI, Conversational Memory and RAG
+🚀 **An AI-powered chatbot that extracts knowledge from PDFs using TogetherAI’s LLMs, FAISS for retrieval, and Conversational Memory with Panel UI.**  
+This chatbot allows users to upload PDFs, retain conversation context, and ask intelligent questions.
 
 ---
 
 ## **🔧 Features**
-✔️ **Upload PDFs** and extract knowledge from documents  
-✔️ **Chatbot using TogetherAI** for language understanding  
-✔️ **Vector-based retrieval** using FAISS  
-✔️ **Real-time UI** with **Panel**  
-✔️ **Modular and extendable** for more models  
+✔️ **Upload PDFs** to extract and index document content  
+✔️ **Chatbot powered by TogetherAI** for advanced language understanding  
+✔️ **Vector-based retrieval** using FAISS for precise search results  
+✔️ **Real-time UI** built with **Panel** for interactive user experiences  
+✔️ **Conversational Memory** that retains context for seamless dialogues  
+✔️ **Modular and extendable** architecture to integrate additional AI models and features  
+✔️ **Efficient Chat Flow** via LangChain's Conversational Retrieval Chain
+
 
 ---
 
