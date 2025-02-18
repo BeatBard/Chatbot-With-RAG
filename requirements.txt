@@ -3,3 +3,7 @@ panel
 langchain 
 pdfplumber 
 docarray 
+pypdf
+faiss-cpu
+sentence-transformers
+langchain-huggingface
