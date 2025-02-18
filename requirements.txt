@@ -1,0 +1,5 @@
+together 
+panel 
+langchain 
+pdfplumber 
+docarray 
