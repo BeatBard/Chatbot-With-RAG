@@ -10,7 +10,7 @@ from langchain_community.document_loaders import PyPDFLoader
 load_dotenv()
 
 api_key = os.getenv("TOGETHER_API_KEY")
-hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")  # Load Hugging Face token
+hf_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
 if not api_key:
     raise ValueError("Missing TogetherAI API key! Ensure it's set in the .env file.")
@@ -26,15 +26,16 @@ def get_together_embeddings(texts):
         model="togethercomputer/m2-bert-80M-8k-retrieval",
         input=texts
     )
+
     print("🔍 TogetherAI Response:", response)  # Debugging print
 
-    # Handle response using the .data attribute
     if hasattr(response, "data") and isinstance(response.data, list):
         return [item.embedding for item in response.data]
-    raise ValueError("Unexpected response format from TogetherAI: " + str(response))
+
+    raise ValueError("Unexpected response format from TogetherAI: ", response)
 
 def load_db(file):
-    """Load PDF, split into chunks, and create a FAISS vector database."""
+    """Load PDF, split into chunks, and create a FAISS vector database"""
     loader = PyPDFLoader(file)
     documents = loader.load()
 
@@ -44,10 +45,8 @@ def load_db(file):
     texts = [doc.page_content for doc in docs]
     embeddings = get_together_embeddings(texts)
 
-    # Use FAISS with Hugging Face authentication
     hf_embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2", 
                                           model_kwargs={"token": hf_token})
 
     db = FAISS.from_texts(texts, hf_embeddings)
-    retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 4})
-    return retriever
+    return db  # Return the FAISS DB directly
