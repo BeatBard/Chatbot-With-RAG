@@ -91,6 +91,6 @@ This project is licensed under the MIT License.
 ---
 
 ## **📞 Contact**
-📧 Email: your-email@example.com  
-🐙 GitHub: [Your Profile](https://github.com/your-username)  
+📧 Email: pcsalwathura@gmail.com 
+🐙 GitHub: (https://github.com/BeatBard)  
 
