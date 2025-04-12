@@ -73,6 +73,24 @@ pn.config.raw_css.append("""
     height: 500px;
     overflow-y: auto;
 }
+
+.section-title {
+    color: #0D47A1;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.success-message {
+    color: #1976D2;
+    text-align: center;
+    font-weight: bold;
+}
+
+.error-message {
+    color: #d32f2f;
+    text-align: center;
+    font-weight: bold;
+}
 """)
 
 # Load environment variables
@@ -119,7 +137,7 @@ class ChatbotUI:
             self.panels = []
             self.panels.append(pn.pane.Markdown(
                 "### 📚 PDF loaded successfully! You can now start chatting.",
-                style={'color': '#1976D2', 'text-align': 'center'}
+                css_classes=["success-message"]
             ))
 
     def chat(self, query):
@@ -128,7 +146,7 @@ class ChatbotUI:
             return pn.WidgetBox(
                 pn.pane.Markdown(
                     "### 📂 Please upload a PDF to start chatting.",
-                    style={'color': '#666', 'text-align': 'center'}
+                    css_classes=["error-message"]
                 ),
                 scroll=True,
                 css_classes=["chat-section"]
@@ -208,13 +226,13 @@ title = pn.pane.Markdown(
 
 # Sidebar sections
 file_upload_section = pn.Column(
-    pn.pane.Markdown("### 📂 Upload PDF", style={'color': '#0D47A1'}),
+    pn.pane.Markdown("### 📂 Upload PDF", css_classes=["section-title"]),
     file_input,
     css_classes=["sidebar-section"]
 )
 
 chat_input_section = pn.Column(
-    pn.pane.Markdown("### 💬 Your Message", style={'color': '#0D47A1'}),
+    pn.pane.Markdown("### 💬 Your Message", css_classes=["section-title"]),
     inp,
     css_classes=["sidebar-section"]
 )
