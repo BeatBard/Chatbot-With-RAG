@@ -2,7 +2,7 @@ import os
 from langchain_together import Together  # ✅ Corrected Import
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from db_loader import load_db
+from db_loader import load_db  # <--- we call load_db now
 
 class Chatbot:
     def __init__(self, pdf_file):
@@ -13,8 +13,12 @@ class Chatbot:
         # Initialize TogetherAI chat model
         self.llm = Together(model="meta-llama/Llama-3.3-70B-Instruct-Turbo")
 
-        # ✅ Explicitly setting output_key to "answer"
-        self.memory = ConversationBufferMemory(memory_key="chat_history", output_key="answer", return_messages=True)
+        # ✅ Setting output_key to "answer" for memory
+        self.memory = ConversationBufferMemory(
+            memory_key="chat_history",
+            output_key="answer",
+            return_messages=True
+        )
 
         # Define the Conversational Retrieval Chain
         self.qa = ConversationalRetrievalChain.from_llm(
@@ -22,22 +26,23 @@ class Chatbot:
             retriever=self.retriever,
             memory=self.memory,
             return_source_documents=True,  # ✅ Ensures sources are returned
-            output_key="answer"  # ✅ Ensures only the answer is stored in memory
+            output_key="answer"            # ✅ Ensures only the answer is stored in memory
         )
 
     def ask(self, query):
         """Query the chatbot with conversational context."""
-        print(f"🔍 Searching for: {query}")
+        print(f"Searching for: {query}")
         try:
-            response = self.qa.invoke({"question": query, "chat_history": self.memory.chat_memory.messages})
+            response = self.qa.invoke({"question": query, 
+                                       "chat_history": self.memory.chat_memory.messages})
 
-            print("🔍 Raw Response:", response)  # Debugging print
+            print("Raw Response:", response)  # Debugging print
 
-            # Extract answer and sources correctly
+            # Extract answer and sources
             answer = response.get("answer", "I couldn't find any relevant information.")
             sources = response.get("source_documents", [])
 
-            print("🧠 Chat History:", self.memory.chat_memory.messages)  # Debug chat history
+            print("Chat History:", self.memory.chat_memory.messages)  # Debug chat history
             print()
             print("-----------------------------")
             return answer, sources

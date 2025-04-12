@@ -3,92 +3,253 @@ import panel as pn
 from dotenv import load_dotenv
 from chatbot import Chatbot
 
+# Enable Panel extensions and custom CSS for better styling
+pn.extension(sizing_mode="stretch_width")
+pn.config.raw_css.append("""
+.modern-input {
+    border: 2px solid #0D47A1;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 16px;
+    width: 100%;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.modern-input:focus {
+    border-color: #1976D2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    outline: none;
+}
+
+.chat-message {
+    margin: 10px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #E3F2FD;
+    margin-left: auto;
+    border: 1px solid #BBDEFB;
+}
+
+.bot-message {
+    background-color: #F5F5F5;
+    margin-right: auto;
+    border: 1px solid #E0E0E0;
+}
+
+.sidebar-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border: 1px solid #e0e0e0;
+}
+
+.title-section {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #0D47A1, #1976D2);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.file-upload-section {
+    background-color: #E3F2FD;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.chat-section {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 500px;
+    overflow-y: auto;
+}
+
+.section-title {
+    color: #0D47A1;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.success-message {
+    color: #1976D2;
+    text-align: center;
+    font-weight: bold;
+}
+
+.error-message {
+    color: #d32f2f;
+    text-align: center;
+    font-weight: bold;
+}
+""")
+
 # Load environment variables
 load_dotenv()
 
-# Ensure API key is set
+# Validate API key
 api_key = os.getenv("TOGETHER_API_KEY")
 if not api_key:
-    raise ValueError("Missing TogetherAI API key! Ensure it's set in the .env file.")
+    raise ValueError("❌ Missing TogetherAI API key! Ensure it's set in the .env file.")
 
-print("🚀 Chatbot is starting...")  # Debug print
+print("🚀 Chatbot is starting...")
 
-# File Upload Widget for PDFs
-file_input = pn.widgets.FileInput(accept=".pdf")
+# File Upload Widget for PDFs with proper width
+file_input = pn.widgets.FileInput(
+    accept=".pdf",
+    width_policy="max",
+    css_classes=["modern-input"],
+    name="📄 Upload PDF"
+)
 
-# Initialize chatbot UI as None (it will be set after PDF upload)
-chat_ui = None  
+# User input widget for chat
+inp = pn.widgets.TextInput(
+    placeholder="Type your message here...",
+    width_policy="max",
+    css_classes=["modern-input"]
+)
 
 class ChatbotUI:
-    def __init__(self, pdf_file):
-        """Initialize chatbot with the given PDF file."""
-        print(f"🔍 Loading PDF: {pdf_file}")  # Debug print
-        self.chatbot = Chatbot(pdf_file)
-        self.panels = []
+    """Handles chatbot interactions and PDF uploads."""
     
+    def __init__(self):
+        self.chatbot = None
+        self.panels = []
+
+    def load_pdf(self, event):
+        """Loads a new PDF and initializes the chatbot."""
+        if file_input.value:
+            pdf_path = "uploaded_file.pdf"
+            with open(pdf_path, "wb") as f:
+                f.write(file_input.value)
+            print(f"🔄 Reloading chatbot with new PDF: {pdf_path}")
+            self.chatbot = Chatbot(pdf_path)
+            # Clear previous chat when new PDF is loaded
+            self.panels = []
+            self.panels.append(pn.pane.Markdown(
+                "### 📚 PDF loaded successfully! You can now start chatting.",
+                css_classes=["success-message"]
+            ))
+
     def chat(self, query):
-        """Handles user input and generates chatbot responses based on the PDF."""
+        """Handles user input and generates chatbot responses."""
+        if not self.chatbot:
+            return pn.WidgetBox(
+                pn.pane.Markdown(
+                    "### 📂 Please upload a PDF to start chatting.",
+                    css_classes=["error-message"]
+                ),
+                scroll=True,
+                css_classes=["chat-section"]
+            )
+
         if not query.strip():
-            return pn.WidgetBox(pn.Row("User:", pn.pane.Markdown("", width=600)), scroll=True)
+            return pn.WidgetBox(
+                pn.pane.Markdown("", width_policy="max"),
+                scroll=True,
+                css_classes=["chat-section"]
+            )
 
         try:
             answer, sources = self.chatbot.ask(query)
-
-            # If no relevant info is found, notify the user
             if not sources:
                 answer = "I couldn't find any relevant information in the uploaded PDF. Try rephrasing your question."
 
-            formatted_response = f'<div style="background-color: #F6F6F6; padding: 10px;">{answer}</div>'
+            user_message = pn.pane.Markdown(
+                f"**You:** {query}",
+                css_classes=["chat-message", "user-message"]
+            )
+            
+            bot_message = pn.pane.Markdown(
+                f"**Bot:** {answer}",
+                css_classes=["chat-message", "bot-message"]
+            )
+
+            self.panels.extend([user_message, bot_message])
+            
+            return pn.WidgetBox(
+                *self.panels,
+                scroll=True,
+                css_classes=["chat-section"]
+            )
+
         except Exception as e:
             print(f"❌ Error during chat response: {e}")
-            formatted_response = '<div style="background-color: #FFCCCC; padding: 10px;">Error generating response.</div>'
+            error_message = pn.pane.Markdown(
+                "❌ Error generating response. Please try again.",
+                css_classes=["chat-message", "bot-message"]
+            )
+            self.panels.append(error_message)
+            return pn.WidgetBox(
+                *self.panels,
+                scroll=True,
+                css_classes=["chat-section"]
+            )
 
-        self.panels.extend([
-            pn.Row("User:", pn.pane.Markdown(query, width=600)),
-            pn.Row("ChatBot:", pn.pane.HTML(formatted_response, width=600))
-        ])
-        return pn.WidgetBox(*self.panels, scroll=True)
-
-def load_new_pdf(event):
-    """Handles new PDF uploads and reloads the chatbot dynamically."""
-    global chat_ui
-    if file_input.value:
-        pdf_path = "uploaded_file.pdf"
-        with open(pdf_path, "wb") as f:
-            f.write(file_input.value)
-        print(f"🔄 Reloading chatbot with new PDF: {pdf_path}")
-        chat_ui = ChatbotUI(pdf_path)
+# Initialize chatbot UI handler
+chat_ui = ChatbotUI()
 
 # Watch for PDF uploads
-file_input.param.watch(load_new_pdf, "value")
+file_input.param.watch(chat_ui.load_pdf, "value")
 
-# User input widget for chat
-inp = pn.widgets.TextInput(placeholder="Type your message here...")
-
-# Bind the chat function safely
 def safe_chat_bind(query):
     """Ensures chatbot is ready before processing user input."""
-    if chat_ui:
-        return chat_ui.chat(query)
-    else:
-        return pn.WidgetBox(pn.Row("ChatBot:", pn.pane.Markdown("Please upload a PDF to start chatting.", width=600)), scroll=True)
+    return chat_ui.chat(query)
 
+# Bind the conversation function to user input
 conversation = pn.bind(safe_chat_bind, inp)
 
-# UI Layout
-dashboard = pn.Column(
-    pn.Row(pn.pane.Markdown("## 🤖 Chatbot With TogetherAI", styles={'font-size': '20px', 'font-weight': 'bold'})),
-    pn.Row(file_input),  # PDF upload widget
-    pn.Row(inp),
-    pn.layout.Divider(),
-    pn.panel(conversation, loading_indicator=True, height=400),
-    pn.layout.Divider(),
+# Create Material UI template with improved spacing
+template = pn.template.MaterialTemplate(
+    title="🤖 Chatbot with TogetherAI",
+    header_background="#0D47A1",
+    sidebar_width=300
 )
 
-print("✅ Chatbot UI is ready!")  # Debug print
+# Title section
+title = pn.pane.Markdown(
+    """
+    # 🤖 Chatbot with TogetherAI
+    ### Upload a PDF and start chatting!
+    """,
+    css_classes=["title-section"]
+)
 
+# Sidebar sections
+file_upload_section = pn.Column(
+    pn.pane.Markdown("### 📂 Upload PDF", css_classes=["section-title"]),
+    file_input,
+    css_classes=["sidebar-section"]
+)
+
+chat_input_section = pn.Column(
+    pn.pane.Markdown("### 💬 Your Message", css_classes=["section-title"]),
+    inp,
+    css_classes=["sidebar-section"]
+)
+
+# Add sections to sidebar
+template.sidebar.append(title)
+template.sidebar.append(file_upload_section)
+template.sidebar.append(chat_input_section)
+
+# Main content: Chat interface
+template.main.append(pn.panel(conversation, loading_indicator=True))
+
+print("✅ Chatbot UI is ready!")
+
+# Launch UI
 try:
-    dashboard.show()
-    print("👀 UI should now be visible in your browser!")  # Debug print
+    template.show()
+    print("👀 UI should now be visible in your browser!")
 except Exception as e:
     print(f"❌ Error launching UI: {e}")
