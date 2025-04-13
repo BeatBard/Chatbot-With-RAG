@@ -1,52 +1,77 @@
 import os
-from langchain_together import Together  # ✅ Corrected Import
+from langchain_openai import OpenAI  # Using base OpenAI for completions
+from langchain_core.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
-from db_loader import load_db  # <--- we call load_db now
+from db_loader import load_db  
+from langchain.schema import HumanMessage, AIMessage, SystemMessage  # For conversation messages
 
 class Chatbot:
     def __init__(self, pdf_file):
-        """Initialize chatbot with the given PDF file and load the knowledge base."""
         print(f"📄 Loading document: {pdf_file}")
         self.retriever = load_db(pdf_file).as_retriever()
 
-        # Initialize TogetherAI chat model
-        self.llm = Together(model="meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        # Initialize the LLM with your vLLM endpoint.
+        self.llm = OpenAI(
+            model="Llama-3.1-8B",
+            openai_api_base="https://7e6lv0bc4on3wl-8000.proxy.runpod.net/v1",
+            openai_api_key="THIS_SHOULD_NOT_BE_A_REAL_KEY",
+            temperature=0.7,
+            max_tokens=512
+        )
 
-        # ✅ Setting output_key to "answer" for memory
+        # Initialize conversation memory so we can track chat history.
         self.memory = ConversationBufferMemory(
             memory_key="chat_history",
             output_key="answer",
             return_messages=True
         )
 
-        # Define the Conversational Retrieval Chain
-        self.qa = ConversationalRetrievalChain.from_llm(
-            llm=self.llm,
-            retriever=self.retriever,
-            memory=self.memory,
-            return_source_documents=True,  # ✅ Ensures sources are returned
-            output_key="answer"            # ✅ Ensures only the answer is stored in memory
+        # Custom Sinhala prompt template with [INST] formatting
+        self.prompt_template = PromptTemplate.from_template(
+            "<<SYS>>\n"
+            "ඔබ යහපත් සහ උපකාරී සහකාරයෙකි. පහත සන්දර්භය භාවිතයෙන් පැනයට පිළිතුරු සපයන්න. "
+            "පිළිතුර ලබා ගත නොහැකි නම්, එය තොරතුරු ලබාදී නොමැති බව සඳහන් කරන්න. "
+            "සෑම විටම සිංහල භාෂාවෙන් පිළිතුරු ලබා දෙන්න.\n"
+            "<</SYS>>\n\n"
+            "Context:\n{context}\n\n"
+            "Conversation History:\n{chat_history}\n\n"
+            "Question: {question}\n"
+            "Answer:"
         )
 
-    def ask(self, query):
-        """Query the chatbot with conversational context."""
-        print(f"Searching for: {query}")
+    def ask(self, query: str) -> tuple:
         try:
-            response = self.qa.invoke({"question": query, 
-                                       "chat_history": self.memory.chat_memory.messages})
+            # Retrieve relevant documents.
+            docs = self.retriever.get_relevant_documents(query)
+            context = "\n".join([d.page_content for d in docs])
+            
+            # Format conversation history; if there are no messages, it will be an empty string.
+            chat_history = "\n".join([
+                f"Human: {msg.content}" if isinstance(msg, HumanMessage) else f"Assistant: {msg.content}"
+                for msg in self.memory.chat_memory.messages
+            ])
 
-            print("Raw Response:", response)  # Debugging print
+            # Format the prompt using the custom template.
+            prompt = self.prompt_template.format(
+                context=context,
+                chat_history=chat_history,
+                question=query
+            )
+            print("Formatted prompt:", prompt)
 
-            # Extract answer and sources
-            answer = response.get("answer", "I couldn't find any relevant information.")
-            sources = response.get("source_documents", [])
-
-            print("Chat History:", self.memory.chat_memory.messages)  # Debug chat history
-            print()
-            print("-----------------------------")
-            return answer, sources
+            # Invoke the LLM to generate a response.
+            response = self.llm.invoke(prompt)
+            return response.strip(), docs
 
         except Exception as e:
             print(f"❌ Error generating response: {e}")
-            return "An error occurred while retrieving information.", []
+            return "An error occurred while processing your request.", []
+
+# Example usage:
+if __name__ == "__main__":
+    bot = Chatbot("uploaded_file.pdf")
+    answer, docs = bot.ask("මෙහි සඳහන් වන්නේ කුමක් ගැනද?")
+    print("Answer:", answer)
+    for doc in docs:
+        print("Source snippet:", doc.page_content[:100], "...")
