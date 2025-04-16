@@ -13,8 +13,8 @@ class Chatbot:
 
         # Initialize the LLM with your vLLM endpoint.
         self.llm = OpenAI(
-            model="Llama-3.1-8B",
-            openai_api_base="https://7e6lv0bc4on3wl-8000.proxy.runpod.net/v1",
+            model="meta-llama/Llama-3.1-8B",
+            openai_api_base="https://4au558avgqv4l2-8000.proxy.runpod.net/v1",
             openai_api_key="THIS_SHOULD_NOT_BE_A_REAL_KEY",
             temperature=0.7,
             max_tokens=512
@@ -28,17 +28,30 @@ class Chatbot:
         )
 
         # Custom Sinhala prompt template with [INST] formatting
+        # self.prompt_template = PromptTemplate.from_template(
+        #     "<<SYS>>\n"
+        #     "ඔබ යහපත් සහ උපකාරී සහකාරයෙකි. පහත සන්දර්භය භාවිතයෙන් පැනයට පිළිතුරු සපයන්න. "
+        #     "පිළිතුර ලබා ගත නොහැකි නම්, එය තොරතුරු ලබාදී නොමැති බව සඳහන් කරන්න. "
+        #     "සෑම විටම සිංහල භාෂාවෙන් පිළිතුරු ලබා දෙන්න.\n"
+        #     "<</SYS>>\n\n"
+        #     "Context:\n{context}\n\n"
+        #     "Conversation History:\n{chat_history}\n\n"
+        #     "Question: {question}\n"
+        #     "Answer:"
+        # )
+        
         self.prompt_template = PromptTemplate.from_template(
             "<<SYS>>\n"
-            "ඔබ යහපත් සහ උපකාරී සහකාරයෙකි. පහත සන්දර්භය භාවිතයෙන් පැනයට පිළිතුරු සපයන්න. "
-            "පිළිතුර ලබා ගත නොහැකි නම්, එය තොරතුරු ලබාදී නොමැති බව සඳහන් කරන්න. "
-            "සෑම විටම සිංහල භාෂාවෙන් පිළිතුරු ලබා දෙන්න.\n"
+            "You are a helpful and friendly assistant. Use the context below to answer the question. "
+            "If the answer is not available, say that the information is not provided. "
+            "Always respond in Sinhala language.\n"
             "<</SYS>>\n\n"
             "Context:\n{context}\n\n"
             "Conversation History:\n{chat_history}\n\n"
             "Question: {question}\n"
             "Answer:"
         )
+
 
     def ask(self, query: str) -> tuple:
         try:

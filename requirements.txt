@@ -8,3 +8,5 @@ faiss-cpu
 sentence-transformers
 langchain-huggingface
 langchain-together
+python-dotenv
+langchain-community
